@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Download and install the latest version of Chromium
+
+# fail fast
+set -o errexit
+set -o pipefail
+
+scriptname=$(basename $0)
+system_name=$(uname -s)
+
+case $system_name in
+  Darwin)
+    os=mac
+    url_base='http://commondatastorage.googleapis.com/chromium-browser-continuous/Mac'
+    ;;
+  *)
+    echo "$scriptname: error: unsupported platform: $system_name" >&2
+    exit 2
+    ;;
+esac
+
+cache_dir=${CACHE_DIR:-"$HOME"/.chromium-updater}
+url_latest="$url_base/LAST_CHANGE"
+buildnum=$(curl -sSL "$url_latest")
+url_zip="$url_base/$buildnum/chrome-$os.zip"
+zip_file="$cache_dir/chrome-$os-$buildnum.zip"
+
+mkdir -p "$cache_dir"
+if [ ! -f "$zip_file" ]
+then
+  echo "$scriptname: downloading $(basename $url_zip) (Build $buildnum)" >&2
+  curl -# -L "$url_zip" > "$zip_file".new
+  mv -f "$zip_file".new "$zip_file"
+fi
+
+echo "$scriptname: unpacking $(basename $url_zip) (Build $buildnum)" >&2
+unzip -qo "$zip_file" -d "$cache_dir"
+
+echo "$scriptname: synchronizing /Applications/Chromium.app (Build $buildnum)" >&2
+rsync -azh --delete "$cache_dir"/chrome-mac/Chromium.app /Applications
+
+echo "$scriptname: cleaning up" >&2
+rm -rf "$cache_dir"/chrome-mac
+# Only keep the last 3 zip files
+find . -name 'chrome-mac-*.zip' \
+| sort -t - -k 3 -n \
+| awk 'NR>3{print a[NR%3]}{a[NR%3]=$0}' \
+| xargs rm -f
