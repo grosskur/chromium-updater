@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Download and install the latest version of Chromium
 
