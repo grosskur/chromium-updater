@@ -43,7 +43,7 @@ rsync -azh --delete "$cache_dir"/chrome-$os/Chromium.app /Applications
 echo "$scriptname: cleaning up" >&2
 rm -rf "$cache_dir"/chrome-$os
 # Only keep the last 3 zip files
-find . -name 'chrome-$os-*.zip' \
+find "$cache_dir" -name "chrome-$os-*.zip" \
 | sort -t - -k 3 -n \
 | awk 'NR>3{print a[NR%3]}{a[NR%3]=$0}' \
 | xargs rm -f
